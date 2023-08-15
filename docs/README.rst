@@ -18,12 +18,26 @@
 Documentation
 #############
 
-This directory contains documentation for the Apache Airflow project and other packages that are closely related to it ie. providers packages.  Documentation is built using `Sphinx <https://www.sphinx-doc.org/>`__.
+This directory contains documentation for the Apache Airflow project and other packages that are closely related to it ie. providers packages.  Documentation is built using `Sphinx <https://www.sphinx-doc.org/>`__. Sphinx builds HTMl pages using reStructured text, a markup syntax.
 
 Development documentation preview
 ==================================
 
 Documentation from the development version is built and automatically published: `s.apache.org/airflow-docs <https://s.apache.org/airflow-docs>`_
+
+Submit a docs change
+====================
+
+You can draft docs changes through either the online GitHub editor or by making changes locally, and then opening a PR.
+
+The GitHub editor is convenient for quick fixes and changes to one docs page at a time. However, because reStructured Text (reST) is a *markup language*, not a flavor of *Markdown*, the GitHub preview function doesn't always display correct formatting, like for admonitions or notes, for example. If you need to make changes to multiple pages or to formatting, edit and build your docs suggestions locally.
+
+See `A reStrctured Text Primer <https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ for a quick reference on reST markup and formatting.
+
+Suggest a docs change through GitHub
+------------------------------------
+
+When you visit a page in the Airflow docs, you can click the **Suggest a change on this page** button to open that page's .rst source file on GitHub in a text editor. After you make your edits, you can create a fork of the Airflow repo and then submit your changes as a new PR. 
 
 Building documentation
 ======================
