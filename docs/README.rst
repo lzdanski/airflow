@@ -82,7 +82,8 @@ You can also see all the available arguments via ``--help``.
 Running the Docs Locally
 ------------------------
 
-Once you have built the documentation run the following command from the root directory,
+After you build the documentation, run the following command from the root directory.
+
 You need to have Python installed to run the command:
 
 .. code-block:: bash
@@ -90,9 +91,9 @@ You need to have Python installed to run the command:
     docs/start_doc_server.sh
 
 
-Then, view your docs at ``localhost:8000``, if you are using a virtual machine e.g WSL2,
-you need to find the WSL2 machine IP address and in your browser replace "0.0.0.0" with it
-``http://n.n.n.n:8000``, where n.n.n.n will be the IP of the WSL2.
+Then, view your docs at ``localhost:8000``. If you use a virtual machine, e.g WSL2,
+you need to find the WSL2 machine IP address and replace "0.0.0.0" in your browser with the IP address. For example, 
+``http://n.n.n.n:8000``, where n.n.n.n is the WSL2 machine IP address.
 
 Troubleshooting
 ---------------
@@ -154,4 +155,8 @@ For more information, see: `Cross-referencing syntax <https://www.sphinx-doc.org
 Support
 =======
 
-If you need help, write to `#documentation <https://apache-airflow.slack.com/archives/CJ1LVREHX>`__ channel on `Airflow's Slack <https://s.apache.org/airflow-slack>`__
+If you need help, write to `#documentation <https://apache-airflow.slack.com/archives/CJ1LVREHX>`__ channel on `Airflow's Slack <https://s.apache.org/airflow-slack>`__.
+
+For more resources about working with Sphinx or reST markup syntax, see the `Sphinx documentation <https://www.sphinx-doc.org/en/master/usage/quickstart.html>`__. 
+
+The `Write the Docs <https://www.writethedocs.org/slack/>_` community also includes a #Sphinx Slack channel for questions and additional support.
