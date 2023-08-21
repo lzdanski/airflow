@@ -47,7 +47,7 @@ Your DAGs will start executing once the scheduler is running successfully.
     Subsequent DAG Runs are created according to your DAG's :doc:`timetable <../authoring-and-scheduling/timetable>`.
 
 
-For DAGs with a cron or timedelta schedule, scheduler won't trigger your tasks until the period it covers has ended e.g., A job with ``schedule`` set as ``@daily`` runs after the day
+For DAGs with a cron or timedelta schedule, the scheduler won't trigger your tasks until the period it covers has ended. For example, a job with ``schedule`` set as ``@daily`` runs after the day
 has ended. This technique makes sure that whatever data is required for that period is fully available before the DAG is executed.
 In the UI, it appears as if Airflow is running your tasks a day **late**
 
@@ -61,28 +61,28 @@ In the UI, it appears as if Airflow is running your tasks a day **late**
 
 .. note::
     The scheduler is designed for high throughput. This is an informed design decision to achieve scheduling
-    tasks as soon as possible. The scheduler checks how many free slots available in a pool and schedule at most that number of tasks instances in one iteration.
+    tasks as soon as possible. The scheduler checks how many free slots are available in a pool and then schedules that number of tasks instances in one iteration at most.
     This means that task priority will only come into effect when there are more scheduled tasks
-    waiting than the queue slots. Thus there can be cases where low priority tasks will be scheduled before high priority tasks if they share the same batch.
-    For more read about that you can reference `this GitHub discussion <https://github.com/apache/airflow/discussions/28809>`__.
+    waiting than queue slots. This means there can be cases where low priority tasks will be scheduled before high priority tasks if they share the same batch.
+    To learn more, you can reference `this GitHub discussion <https://github.com/apache/airflow/discussions/28809>`__.
 
 
 DAG File Processing
 -------------------
 
-You can have the Airflow Scheduler be responsible for starting the process that turns the Python files contained in the DAGs folder into DAG objects
+You can configure the Airflow Scheduler to start the process that turns the Python files contained in the DAGs folder into DAG objects
 that contain tasks to be scheduled.
 
-Refer to :doc:`../authoring-and-scheduling/dagfile-processing` for details on how this can be achieved
+Refer to :doc:`../authoring-and-scheduling/dagfile-processing` for details.
 
 
 Triggering DAG with Future Date
 -------------------------------
 
-If you want to use 'external trigger' to run future-dated data intervals, set ``allow_trigger_in_future = True`` in ``scheduler`` section in ``airflow.cfg``.
-This only has effect if your DAG is defined with ``schedule=None``.
+If you want to use an external trigger to run future-dated data intervals, set ``allow_trigger_in_future = True`` in the ``scheduler`` section of ``airflow.cfg``.
+This only has an effect if your DAG is defined with ``schedule=None``.
 When set to ``False`` (the default value), if you manually trigger a run with future-dated data intervals,
-the scheduler will not execute it until its ``data_interval_start`` is in the past.
+the scheduler will not execute it until the ``data_interval_start`` is in the past.
 
 .. _scheduler:ha:
 
@@ -97,42 +97,42 @@ resiliency.
 Overview
 """"""""
 
-The :abbr:`HA (highly available)` scheduler is designed to take advantage of the existing metadata database.
-This was primarily done for operational simplicity: every component already has to speak to this DB, and by
-not using direct communication or consensus algorithm between schedulers (Raft, Paxos, etc.) nor another
-consensus tool (Apache Zookeeper, or Consul for instance) we have kept the "operational surface area" to a
+The :abbr:`HA (highly available)` scheduler takes advantage of the existing metadata database.
+This was primarily done for operational simplicity: every component already interacts with this database, and by
+not using direct communication or a consensus algorithm between schedulers (Raft, Paxos, etc.) nor another
+consensus tool (Apache Zookeeper, or Consul for instance), Airflow keeps the "operational surface area" to a
 minimum.
 
-The scheduler now uses the serialized DAG representation to make its scheduling decisions and the rough
-outline of the scheduling loop is:
+The scheduler uses the serialized DAG representation to make its scheduling decisions. The general
+outline of the scheduling process cycle is:
 
-- Check for any DAGs needing a new DagRun, and create them
+- Check for any DAGs that need a new DagRun, and create a DagRun for them
 - Examine a batch of DagRuns for schedulable TaskInstances or complete DagRuns
-- Select schedulable TaskInstances, and whilst respecting Pool limits and other concurrency limits, enqueue
+- Select schedulable TaskInstances, and while respecting Pool limits and other concurrency limits, queue
   them for execution
 
-This does, however, place some requirements on the Database.
+The steps in this process does, however, place some requirements on the Database.
 
 .. _scheduler:ha:db_requirements:
 
 Database Requirements
 """""""""""""""""""""
 
-The short version is that users of PostgreSQL 10+ or MySQL 8+ are all ready to go -- you can start running as
-many copies of the scheduler as you like -- there is no further set up or config options needed. If you are
-using a different database please read on.
+If you use PostgreSQL 10+ or MySQL 8+, you can start running as
+many copies of the scheduler as you like, and there is no further set up or config options needed. If you are
+using a different database, you might need to tune your scheduler's performance.
 
-To maintain performance and throughput there is one part of the scheduling loop that does a number of
-calculations in memory (because having to round-trip to the DB for each TaskInstance would be too slow) so we
+To maintain performance and throughput, there is one part of the scheduling loop that does a number of
+calculations in memory because having to round-trip to the DB for each TaskInstance would be too slow. You
 need to ensure that only a single scheduler is in this critical section at once - otherwise limits would not
-be correctly respected. To achieve this we use database row-level locks (using ``SELECT ... FOR UPDATE``).
+be correctly respected. To achieve this, use database row-level locks (using ``SELECT ... FOR UPDATE``).
 
-This critical section is where TaskInstances go from scheduled state and are enqueued to the executor, whilst
+This critical section is where TaskInstances go from a scheduled state and are enqueued to the executor, while
 ensuring the various concurrency and pool limits are respected. The critical section is obtained by asking for
-a row-level write lock on every row of the Pool table (roughly equivalent to ``SELECT * FROM slot_pool FOR
-UPDATE NOWAIT`` but the exact query is slightly different).
+a row-level write lock on every row of the Pool table. This process is roughly equivalent to ``SELECT * FROM slot_pool FOR
+UPDATE NOWAIT`` but the exact query is slightly different.
 
-The following databases are fully supported and provide an "optimal" experience:
+The following databases are fully supported and provide an optimal experience:
 
 - PostgreSQL 10+
 - MySQL 8+
@@ -171,41 +171,41 @@ Those two tasks are executed in parallel by the scheduler and run independently 
 different processes. In order to fine-tune your scheduler, you need to include a number of factors:
 
 * The kind of deployment you have
-    * what kind of filesystem you have to share the DAGs (impacts performance of continuously reading DAGs)
-    * how fast the filesystem is (in many cases of distributed cloud filesystem you can pay extra to get
-      more throughput/faster filesystem
-    * how much memory you have for your processing
-    * how much CPU you have available
-    * how much networking throughput you have available
+  * what kind of filesystem you have to share the DAGs, which impacts performance of continuously reading DAGs
+  * how fast the filesystem is -- in many cases of distributed cloud filesystem you can pay extra to get
+    more throughput/faster filesystem
+  * how much memory you have for your processing
+  * how much CPU you have available
+  * how much networking throughput you have available
 
 * The logic and definition of your DAG structure:
-    * how many DAG files you have
-    * how many DAGs you have in your files
-    * how large the DAG files are (remember DAG parser needs to read and parse the file every n seconds)
-    * how complex they are (i.e. how fast they can be parsed, how many tasks and dependencies they have)
-    * whether parsing your DAG file involves importing a lot of libraries or heavy processing at the top level
-      (Hint! It should not. See :ref:`best_practices/top_level_code`)
+  * how many DAG files you have
+  * how many DAGs you have in your files
+  * how large the DAG files are (remember DAG parser needs to read and parse the file every n seconds)
+  * how complex they are (i.e. how fast they can be parsed, how many tasks and dependencies they have)
+  * whether parsing your DAG file involves importing a lot of libraries or heavy processing at the top level
+    (Hint! It should not. See :ref:`best_practices/top_level_code`)
 
 * The scheduler configuration
-   * How many schedulers you have
-   * How many parsing processes you have in your scheduler
-   * How much time scheduler waits between re-parsing of the same DAG (it happens continuously)
-   * How many task instances scheduler processes in one loop
-   * How many new DAG runs should be created/scheduled per loop
-   * How often the scheduler should perform cleanup and check for orphaned tasks/adopting them
+  * How many schedulers you have
+  * How many parsing processes you have in your scheduler
+  * How much time scheduler waits between re-parsing of the same DAG (it happens continuously)
+  * How many task instances scheduler processes in one loop
+  * How many new DAG runs should be created/scheduled per loop
+  * How often the scheduler should perform cleanup and check for orphaned tasks/adopting them
 
 In order to perform fine-tuning, it's good to understand how Scheduler works under-the-hood.
-You can take a look at the Airflow Summit 2021 talk
-`Deep Dive into the Airflow Scheduler talk <https://youtu.be/DYC4-xElccE>`_ to perform the fine-tuning.
+You can take a look at the Airflow Summit 2021 talk,
+`Deep Dive into the Airflow Scheduler talk <https://youtu.be/DYC4-xElccE>`_, to perform the fine-tuning.
 
 How to approach Scheduler's fine-tuning
 """""""""""""""""""""""""""""""""""""""
 
-Airflow gives you a lot of "knobs" to turn to fine tune the performance but it's a separate task,
-depending on your particular deployment, your DAG structure, hardware availability and expectations,
+Airflow gives you a lot of "knobs" to turn to fine tune the performance, but it's a separate task and
+depends on your particular deployment, your DAG structure, hardware availability, and expectations,
 to decide which knobs to turn to get best effect for you. Part of the job when managing the
 deployment is to decide what you are going to optimize for. Some users are ok with
-30 seconds delays of new DAG parsing, at the expense of lower CPU usage, whereas some other users
+30 seconds delays of new DAG parsing, at the expense of lower CPU usage, whereas other users
 expect the DAGs to be parsed almost instantly when they appear in the DAGs folder at the
 expense of higher CPU usage for example.
 
@@ -218,8 +218,8 @@ to observe and monitor your systems):
 
 * it's extremely important to monitor your system with the right set of tools that you usually use to
   monitor your system. This document does not go into details of particular metrics and tools that you
-  can use, it just describes what kind of resources you should monitor, but you should follow your best
-  practices for monitoring to grab the right data.
+  can use, it just describes what kind of resources you should monitor. Follow your best
+  practices for monitoring to collect the right data.
 * decide which aspect of performance is most important for you (what you want to improve)
 * observe your system to see where your bottlenecks are: CPU, memory, I/O are the usual limiting factors
 * based on your expectations and observations - decide what is your next improvement and go back to
