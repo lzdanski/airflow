@@ -16,73 +16,116 @@
     under the License.
 
 Trigger Rules
-~~~~~~~~~~~~~
+=============
 
 By default, Airflow waits for all upstream (direct parents) tasks for a task to be :ref:`successful <concepts:task-states>` before it runs that task.
 
-However, this is just the default behaviour, and you can control it using the ``trigger_rule`` argument to a Task. The options for ``trigger_rule`` are:
-
-* ``all_success`` (default): All upstream tasks have succeeded
-* ``all_failed``: All upstream tasks are in a ``failed`` or ``upstream_failed`` state
-* ``all_done``: All upstream tasks are done with their execution
-* ``all_skipped``: All upstream tasks are in a ``skipped`` state
-* ``one_failed``: At least one upstream task has failed (does not wait for all upstream tasks to be done)
-* ``one_success``: At least one upstream task has succeeded (does not wait for all upstream tasks to be done)
-* ``one_done``: At least one upstream task succeeded or failed
-* ``none_failed``: All upstream tasks have not ``failed`` or ``upstream_failed`` - that is, all upstream tasks have succeeded or been skipped
-* ``none_failed_min_one_success``: All upstream tasks have not ``failed`` or ``upstream_failed``, and at least one upstream task has succeeded.
-* ``none_skipped``: No upstream task is in a ``skipped`` state - that is, all upstream tasks are in a ``success``, ``failed``, or ``upstream_failed`` state
-* ``always``: No dependencies at all, run this task at any time
-
+However, this is the default behaviour, and you can control it using the ``trigger_rule`` argument to a Task. 
 
 You can also combine this with the :ref:`concepts:depends-on-past` functionality if you wish.
 
-.. note::
+Trigger rule options
+--------------------
 
-    It's important to be aware of the interaction between trigger rules and skipped tasks, especially tasks that are skipped as part of a branching operation. *You almost never want to use all_success or all_failed downstream of a branching operation*.
+The options for ``trigger_rule`` are:
 
-    Skipped tasks will cascade through trigger rules ``all_success`` and ``all_failed``, and cause them to skip as well. Consider the following DAG:
+``all_success``
+^^^^^^^^^^^^^^^
+By default, Airflow triggers the next task in a DAG after all upstream tasks have succeeded, and are in the ``success`` state. 
 
-    .. code-block:: python
+    .. note::
+    This means that if any of the parent tasks do not ``succeed``, then the task is skipped.
 
-        # dags/branch_without_trigger.py
-        import pendulum
+``all_failed``
+^^^^^^^^^^^^^^
+The task is triggered when all upstream tasks fail, with either a ``failed`` or ``upstream_failed`` state.
 
-        from airflow.decorators import task
-        from airflow.models import DAG
-        from airflow.operators.empty import EmptyOperator
+``all_done``
+^^^^^^^^^^^^
+Airflow triggers the next task when all upstream tasks have completed their execution, no matter the final state. 
+This means upstream tasks can have a ``success``, ``failed``, or ``skipped`` state. 
 
-        dag = DAG(
-            dag_id="branch_without_trigger",
-            schedule="@once",
-            start_date=pendulum.datetime(2019, 2, 28, tz="UTC"),
-        )
+``all_skipped``
+^^^^^^^^^^^^^^^
+Triggers a task when all upstream tasks were ``skipped``. 
 
-        run_this_first = EmptyOperator(task_id="run_this_first", dag=dag)
+``one_failed``
+^^^^^^^^^^^^^^
+When one upstream tasks fails, it triggers the next task.
+
+``one_success``
+^^^^^^^^^^^^^^^
+As soon as one task succeeds, the task is triggered.
+
+``one_done``
+^^^^^^^^^^^^
+Airflow triggers the next task as soon as one upstream task completes, regardless of the final state. This means the upstream task can have a ``success`` or ``failed``. 
+
+``none_failed``
+^^^^^^^^^^^^^^^
+If all tasks upstream have succeed or are skipped, it triggers this task. 
+
+``none_failed_min_one_success``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If at least one upstream task succeeds, and the rest either succeed or are skipped, the task is triggered.
+
+``none_skipped``
+^^^^^^^^^^^^^^^^
+Airflow triggers your task if none of the upstream tasks are ``skipped``, which means all upstream tasks are in a ``success``, ``failed``, or ``upstream_failed`` state.
+
+``always``
+^^^^^^^^^^^
+There are no dependencies. The task can run at anytime.
 
 
-        @task.branch(task_id="branching")
-        def do_branching():
-            return "branch_a"
+
+Skipped tasks and trigger rules
+"""""""""""""""""""""""""""""""
+
+It's important to be aware of the interaction between trigger rules and skipped tasks, especially tasks that are skipped as part of a branching operation. *You almost never want to use all_success or all_failed downstream of a branching operation*.
+
+Skipped tasks will cascade through trigger rules ``all_success`` and ``all_failed``, and cause them to skip as well. Consider the following DAG:
+
+.. code-block:: python
+
+    # dags/branch_without_trigger.py
+    import pendulum
+
+    from airflow.decorators import task
+    from airflow.models import DAG
+    from airflow.operators.empty import EmptyOperator
+
+    dag = DAG(
+        dag_id="branch_without_trigger",
+        schedule="@once",
+        start_date=pendulum.datetime(2019, 2, 28, tz="UTC"),
+    )
+
+    run_this_first = EmptyOperator(task_id="run_this_first", dag=dag)
 
 
-        branching = do_branching()
+    @task.branch(task_id="branching")
+    def do_branching():
+        return "branch_a"
 
-        branch_a = EmptyOperator(task_id="branch_a", dag=dag)
-        follow_branch_a = EmptyOperator(task_id="follow_branch_a", dag=dag)
 
-        branch_false = EmptyOperator(task_id="branch_false", dag=dag)
+    branching = do_branching()
 
-        join = EmptyOperator(task_id="join", dag=dag)
+    branch_a = EmptyOperator(task_id="branch_a", dag=dag)
+    follow_branch_a = EmptyOperator(task_id="follow_branch_a", dag=dag)
 
-        run_this_first >> branching
-        branching >> branch_a >> follow_branch_a >> join
-        branching >> branch_false >> join
+    branch_false = EmptyOperator(task_id="branch_false", dag=dag)
 
-    ``join`` is downstream of ``follow_branch_a`` and ``branch_false``. The ``join`` task will show up as skipped because its ``trigger_rule`` is set to ``all_success`` by default, and the skip caused by the branching operation cascades down to skip a task marked as ``all_success``.
+    join = EmptyOperator(task_id="join", dag=dag)
 
-    .. image:: /img/branch_without_trigger.png
+    run_this_first >> branching
+    branching >> branch_a >> follow_branch_a >> join
+    branching >> branch_false >> join
 
-    By setting ``trigger_rule`` to ``none_failed_min_one_success`` in the ``join`` task, we can instead get the intended behaviour:
+``join`` is downstream of ``follow_branch_a`` and ``branch_false``. The ``join`` task will show up as skipped because its ``trigger_rule`` is set to ``all_success`` by default, and the skip caused by the branching operation cascades down to skip a task marked as ``all_success``.
 
-    .. image:: /img/branch_with_trigger.png
+.. image:: /img/branch_without_trigger.png
+
+By setting ``trigger_rule`` to ``none_failed_min_one_success`` in the ``join`` task, we can instead get the intended behaviour:
+
+.. image:: /img/branch_with_trigger.png
