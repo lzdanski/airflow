@@ -45,6 +45,7 @@ configuring an Airflow environment.
     export-more-env-vars
     connection
     variable
+    trigger-rules
     setup-and-teardown
     run-behind-proxy
     run-with-systemd
