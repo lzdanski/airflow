@@ -34,7 +34,8 @@ The options for ``trigger_rule`` are:
 By default, Airflow triggers the next task in a DAG after all upstream tasks have succeeded, and are in the ``success`` state. 
 
     .. note::
-    This means that if any of the parent tasks do not ``succeed``, then the task is skipped.
+        
+        This means that if any of the parent tasks do not ``succeed``, then the task is skipped.
 
 ``all_failed``
 ^^^^^^^^^^^^^^
