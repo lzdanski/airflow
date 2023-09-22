@@ -18,16 +18,41 @@
 Trigger Rules
 =============
 
-By default, Airflow waits for all upstream (direct parents) tasks for a task to be :ref:`successful <concepts:task-states>` before it runs that task.
+By default, Airflow waits for all upstream (direct parent) tasks for a task to be :ref:`successful <concepts:task-states>` before it runs that task.
 
-However, this is the default behaviour, and you can control it using the ``trigger_rule`` argument to a Task. 
+However, this is the default behaviour, and you can control it adding the ``trigger_rule`` argument to a Task. 
 
 You can also combine this with the :ref:`concepts:depends-on-past` functionality if you wish.
+
+Setting trigger rules
+---------------------
+
+You can assign trigger rules to both task flows and operators with the ``trigger_rule`` argument. 
+
+The following example shows how you can set a task to print ``hi`` when all upstream tasks have completed, even if they fail or skip. 
+
+.. code-block:: python
+
+     @task(
+    trigger_rule="all_done"
+    )
+    def my_task():
+        return "hi"
+
+Setting trigger rules for operators works in a similar way. The following example shows the same trigger rule in the ``BashOperator``, which configures ``my_task`` to begin when all upstream tasks complete.
+
+.. code-block:: python
+
+    my_task = BashOperator(
+    task_id="my_task",
+	bash_command="echo hi",
+    trigger_rule="all_done"
+    )
 
 Trigger rule options
 --------------------
 
-The options for ``trigger_rule`` are:
+The options for ``trigger_rule`` are: 
 
 ``all_success``
 ^^^^^^^^^^^^^^^
@@ -77,7 +102,6 @@ Airflow triggers your task if none of the upstream tasks are ``skipped``, which 
 ``always``
 ^^^^^^^^^^^
 There are no dependencies. The task can run at anytime.
-
 
 
 Skipped tasks and trigger rules
